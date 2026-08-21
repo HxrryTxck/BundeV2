@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AppShell, Header } from "./order-management";
+import { AppShell, Header, useBundleScope } from "./order-management";
 
 type View = "All Orders" | "Action Required" | "Stalled" | "Push Failed" | "On Hold" | "SLA At Risk" | "Cancellation Pending" | "Partial Fulfilment";
 type Order = { id: string; client: string; type: string; state: string; wms: string; shipment: string; sla: string; warehouse: string; exception: string; owner: string; updated: string; tags: View[]; integration: string; country: string; courier: string; source: string; created: string; despatch: string };
@@ -26,6 +26,11 @@ type OptionalField = typeof optionalFields[number];
 type CreateMode = "single" | "bulk" | null;
 
 export function OrdersWorkbench() {
+  return <AppShell><OrdersWorkbenchContent /></AppShell>;
+}
+
+function OrdersWorkbenchContent() {
+  const { clientScoped } = useBundleScope();
   const [view, setView] = useState<View>("All Orders");
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -33,10 +38,9 @@ export function OrdersWorkbench() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createMode, setCreateMode] = useState<CreateMode>(null);
   const [visibleOptional, setVisibleOptional] = useState<OptionalField[]>([]);
-  const clientScoped = false; // The header's default All Clients view is internal; a client view omits this column.
   const filtered = useMemo(() => records.filter((record) => (view === "All Orders" || record.tags.includes(view)) && Object.values(record).join(" ").toLowerCase().includes(search.toLowerCase())), [view, search]);
   const toggleColumn = (field: OptionalField) => setVisibleOptional((current) => current.includes(field) ? current.filter((item) => item !== field) : [...current, field]);
-  return <AppShell><Header title="Order Management" copy="Monitor, investigate and manage orders across your fulfilment network." />
+  return <><Header title="Order Management" copy="Monitor, investigate and manage orders across your fulfilment network." />
     <section className="workbench-summary"><SummaryCard label="Orders Today" value="1,248" detail="Across 4 warehouses" /><SummaryCard label="Action Required" value="18" detail="6 high priority" warn /><SummaryCard label="SLA At Risk" value="7" detail="2 within 1 hour" warn /><SummaryCard label="Fulfilment SLA" value="96.8%" detail="Target 95%" /></section>
     <section className="panel canonical-pipeline"><div className="panel-head"><div><h2>Order pipeline</h2><p>Canonical Bundle lifecycle with operational signals surfaced in context.</p></div></div><div className="canonical-stages">{[["Validating", "12 orders", "3 require attention"], ["Ready", "89 orders", "1 routing review"], ["In Fulfilment", "184 orders", "2 push failures · 7 SLA at risk"], ["Fulfilled", "71 orders", "4 awaiting first scan"], ["In Transit", "243 orders", "2 carrier exceptions"], ["Delivered", "96 orders", "All within SLA"]].map(([stage,count,signal], index) => <div className="canonical-stage" key={stage}><span>{stage}</span><b>{count}</b><small className={signal.includes("require") || signal.includes("failure") || signal.includes("risk") ? "signal-warning" : ""}>{signal}</small>{index < 5 && <i>→</i>}</div>)}</div></section>
     <section className="orders-workbench dense-workbench"><div className="panel-head"><div><h2>Orders</h2><p>Saved views filter this same operational table.</p></div><div className="create-wrap"><button className="primary" onClick={() => setCreateOpen((current) => !current)}>+ Create Order <span>⌄</span></button>{createOpen && <div className="create-menu"><button onClick={() => { setCreateMode("single"); setCreateOpen(false); }}>Create single order</button><button onClick={() => { setCreateMode("bulk"); setCreateOpen(false); }}>Bulk upload</button></div>}</div></div>
@@ -46,7 +50,7 @@ export function OrdersWorkbench() {
       {columnsOpen && <div className="columns-drawer"><b>Optional columns</b>{optionalFields.map((field) => <label key={field}><input type="checkbox" checked={visibleOptional.includes(field)} onChange={() => toggleColumn(field)} /> {field}</label>)}<button onClick={() => setColumnsOpen(false)}>Done</button></div>}
       {view === "Action Required" ? <ActionRequiredTable /> : <DenseTable rows={filtered} showClient={!clientScoped} optional={visibleOptional} />}
     </section>{createMode === "single" && <SingleOrderPanel close={() => setCreateMode(null)} />}{createMode === "bulk" && <BulkUploadPanel close={() => setCreateMode(null)} />}
-  </AppShell>;
+  </>;
 }
 
 function SummaryCard({ label, value, detail, warn = false }: { label: string; value: string; detail: string; warn?: boolean }) { return <article><span>{label}</span><b>{value}</b><small className={warn ? "red-text" : ""}>{detail}</small></article> }

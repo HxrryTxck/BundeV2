@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { OrderDetailTabs } from "./order-detail-tabs";
 
 type Queue = "All Orders" | "Action Required" | "Stalled" | "Push Failed" | "On Hold" | "SLA At Risk" | "Cancellation Pending" | "Partial Fulfilment";
@@ -22,10 +22,15 @@ const orders: Order[] = [
 
 const classFor = (value: string) => value.toLowerCase().replaceAll(" ", "-");
 const pill = (value: string) => <span className={`pill ${classFor(value)}`}>{value}</span>;
+const BundleScopeContext = createContext({ clientScoped: false });
+export const useBundleScope = () => useContext(BundleScopeContext);
 
 export function AppShell({ children, detail = false }: { children: React.ReactNode; detail?: boolean }) {
   const [clientOpen, setClientOpen] = useState(false);
-  return <main className="oms-shell"><header className="bundle-topnav"><Link href="/orders" className="bundle-logo"><span>b</span><b>bundle</b><small>by wayfindr</small></Link><nav aria-label="Main navigation"><button title="Dashboard is outside the scope of this Order Management prototype.">Dashboard</button><Link className="nav-active" href="/orders">Orders</Link><button title="Returns is outside the scope of this Order Management prototype.">Returns</button><button title="Inventory is outside the scope of this Order Management prototype.">Inventory</button><button title="ASN is outside the scope of this Order Management prototype.">ASN</button><button title="Shipments is outside the scope of this Order Management prototype.">Shipments</button><button title="Settings is outside the scope of this Order Management prototype.">Settings</button></nav><div className="topnav-right"><div className="client-select"><button title="Switches client scope for internal Wayfindr users." onClick={() => setClientOpen((current) => !current)}>All Clients <span>⌄</span></button>{clientOpen && <div className="client-menu"><button onClick={() => setClientOpen(false)}>All Clients</button><button onClick={() => setClientOpen(false)}>Aster & Ash</button><button onClick={() => setClientOpen(false)}>Canyon Club</button></div>}</div><button title="Shows notifications." className="top-notification">●<i>3</i></button><div className="avatar top-avatar">EM</div></div></header><section className="oms-content">{children}</section></main>;
+  const [client, setClient] = useState("All Clients");
+  const clientScoped = client !== "All Clients";
+  const chooseClient = (next: string) => { setClient(next); setClientOpen(false); };
+  return <BundleScopeContext.Provider value={{ clientScoped }}><main className="oms-shell"><header className="bundle-topnav"><Link href="/orders" className="bundle-logo"><span>b</span><b>bundle</b><small>by wayfindr</small></Link><nav aria-label="Main navigation"><button title="Dashboard is outside the scope of this Order Management prototype.">Dashboard</button><Link className="nav-active" href="/orders">Orders</Link><button title="Returns is outside the scope of this Order Management prototype.">Returns</button><button title="Inventory is outside the scope of this Order Management prototype.">Inventory</button><button title="ASN is outside the scope of this Order Management prototype.">ASN</button><button title="Shipments is outside the scope of this Order Management prototype.">Shipments</button><button title="Settings is outside the scope of this Order Management prototype.">Settings</button></nav><div className="topnav-right"><div className="client-select"><button title="Switches between internal All Clients and client-scoped permission views." onClick={() => setClientOpen((current) => !current)}>{client} <span>⌄</span></button>{clientOpen && <div className="client-menu"><button onClick={() => chooseClient("All Clients")}>All Clients</button><button onClick={() => chooseClient("Aster & Ash")}>Aster & Ash</button><button onClick={() => chooseClient("Canyon Club")}>Canyon Club</button></div>}</div><button title="Shows notifications." className="top-notification">●<i>3</i></button><div className="avatar top-avatar">EM</div></div></header><section className="oms-content">{children}</section></main></BundleScopeContext.Provider>;
 }
 
 export function Header({ title, copy, back }: { title: string; copy: string; back?: boolean }) {
@@ -77,10 +82,11 @@ function StatusCard({ label, value, detail, tone = "neutral" }: { label: string;
 }
 
 function ExceptionBanner({ orderId, onResolve }: { orderId: string; onResolve: () => void }) {
+  const { clientScoped } = useBundleScope();
   const [technicalOpen, setTechnicalOpen] = useState(false);
   const addressException = orderId === "BW-10480" || orderId === "EU33691";
   const content = addressException ? { title: "Delivery address needs correcting", owner: "Client", reason: "The postcode does not match the destination country.", resolution: "Correct the delivery postcode in Shopify. Bundle will automatically revalidate the order during the next sync.", technical: "Address validation response: postcode country mismatch · expected GB · received destination code AU." } : { title: "Quantity mismatch", owner: "Warehouse", reason: "Shipment reconciliation found 1 unit outstanding.", resolution: "Confirm the residual fulfilment plan. Bundle will retain the outstanding quantity as an open fulfilment part.", technical: "Reconciliation response: ordered_qty=2, shipped_qty=1, warehouse_ref=SC-354592." };
-  return <section className="exception-banner"><div className="exception-marker">!</div><div className="exception-banner-copy"><h2>{content.title}</h2><span>Owner: <b>{content.owner}</b></span><p>{content.reason}</p><div className="resolution-copy"><small>How to resolve</small><b>{content.resolution}</b></div><button className="technical-toggle" onClick={() => setTechnicalOpen((current) => !current)}>Technical details {technicalOpen ? "⌃" : "⌄"}</button>{technicalOpen && <code>{content.technical}</code>}</div><button className="resolve-button" title="Opens the contextual resolution actions for this exception." onClick={onResolve}>Review resolution →</button></section>;
+  return <section className="exception-banner"><div className="exception-marker">!</div><div className="exception-banner-copy"><h2>{content.title}</h2><span>Owner: <b>{content.owner}</b></span><p>{content.reason}</p><div className="resolution-copy"><small>How to resolve</small><b>{content.resolution}</b></div>{!clientScoped && <><button className="technical-toggle" onClick={() => setTechnicalOpen((current) => !current)}>Technical details {technicalOpen ? "⌃" : "⌄"}</button>{technicalOpen && <code>{content.technical}</code>}</>}</div><button className="resolve-button" title="Opens the contextual resolution actions for this exception." onClick={onResolve}>Review resolution →</button></section>;
 }
 
 function DetailPanel({ tab, order }: { tab: DetailTab; order: Order }) {
