@@ -1,0 +1,11 @@
+/* Status colour communicates operational health, never routine lifecycle position. */
+.pill{background:#f7f6f4;color:#30302e;border:1px solid #e2dfda}
+/* Neutral lifecycle progress */
+.pill.validating,.pill.ready,.pill.in-fulfilment,.pill.fulfilled,.pill.in-transit,.pill.delivered,.pill.invoiced{background:#f7f6f4;color:#30302e;border-color:#e2dfda}
+/* Positive outcome or health */
+.pill.within-sla,.pill.healthy,.pill.success,.pill.completed-successfully,.pill.allowed,.pill.enabled{background:#edf7f0;color:#2d6b49;border-color:#cde6d5}
+/* Attention is needed but the order can still progress */
+.pill.at-risk,.pill.waiting,.pill.awaiting-scan,.pill.partially-fulfilled,.pill.partial-fulfilment,.pill.on-hold,.pill.paused,.pill.cancellation-pending,.pill.pending,.pill.conditional,.pill.review-needed,.pill.attention{background:#fff7e7;color:#936117;border-color:#efd39d}
+/* Failure or critical intervention */
+.pill.breached,.pill.failed,.pill.invalid,.pill.blocked,.pill.critical,.pill.no{background:#fff0f1;color:#a13f4b;border-color:#f1c5ca}
+.exception,.order-issue{color:#a13f4b!important}.amber-text{color:#936117!important}.green-text{color:#2d6b49!important}.red-text,.danger-text{color:#a13f4b!important}
