@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type View = "Overview" | "Orders" | "Exceptions" | "Bulk upload" | "Integrations" | "Settings";
 
@@ -18,9 +18,33 @@ const nav: { label: View; icon: string }[] = [
   { label: "Bulk upload", icon: "⇧" }, { label: "Integrations", icon: "⌘" }, { label: "Settings", icon: "⚙" },
 ];
 
+function describeControl(label: string) {
+  const control = label.replace(/\s+/g, " ").trim();
+  if (/view (queue|all|network|inventory|full|client|audit|policy)/i.test(control)) return "Opens the related Bundle workbench with the relevant filters or detail view applied.";
+  if (/retry wms push/i.test(control)) return "Retries the failed warehouse handoff using the original idempotency key after the data issue is corrected.";
+  if (/re-route/i.test(control)) return "Shows eligible warehouses, then revalidates stock, SKU and service capability before changing the route.";
+  if (/resolve exception/i.test(control)) return "Records a resolution, reruns the blocking validation and closes the exception only when the check passes.";
+  if (/hold/i.test(control)) return "Pauses operational progress with a reason and keeps the order visible in the On Hold view.";
+  if (/create order|bulk/i.test(control)) return "Starts the standard Bundle validation pipeline for a manual or uploaded order.";
+  if (/filter/i.test(control)) return "Opens filters for state, client, warehouse, exception ownership, courier and SLA.";
+  if (/export/i.test(control)) return "Prepares the current filtered list for export.";
+  if (/invite/i.test(control)) return "Invites a team member and applies the selected role-based permissions.";
+  if (/browse|drop your order/i.test(control)) return "Lets the user select a CSV or XLSX order file for row-by-row validation.";
+  if (/add integration/i.test(control)) return "Starts the connection flow for a storefront, warehouse or carrier integration.";
+  if (/help/i.test(control)) return "Opens Bundle guidance for this workspace.";
+  if (/•••|…/.test(control)) return "Shows secondary actions that are available for this record and your role.";
+  return `This control opens the ${control || "selected"} workflow in the live Bundle product.`;
+}
+
 const pill = (value: string) => <span className={`pill ${value.toLowerCase().replaceAll(" ", "-")}`}>{value}</span>;
 
 function Header({ title, caption }: { title: string; caption: string }) {
+  useEffect(() => {
+    document.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
+      if (!button.title) button.title = describeControl(button.textContent ?? "");
+    });
+  }, []);
+
   return <header className="page-head"><div><div className="eyebrow">OPERATIONS / {title.toUpperCase()}</div><h1>{title}</h1><p>{caption}</p></div><div className="head-actions"><button className="icon-button">⌕</button><button className="notification">● <span>3</span></button><div className="avatar">EM</div></div></header>;
 }
 
@@ -41,7 +65,7 @@ function Overview({ setView }: { setView: (view: View) => void }) {
 
 function OrderTable({ compact = false }: { compact?: boolean }) { return <div className="table-wrap"><table><thead><tr><th>Order</th><th>Client</th><th>Order state</th><th>WMS state</th><th>Shipment</th><th>SLA</th><th>Warehouse</th><th>Exception</th><th/></tr></thead><tbody>{orders.slice(0, compact ? 4 : 6).map((o) => <tr key={o[0]}><td><b>{o[0]}</b><small>Shopify · 14 min ago</small></td><td>{o[1]}</td><td>{pill(o[2])}</td><td>{o[3]}</td><td>{o[4]}</td><td>{pill(o[5])}</td><td>{o[6]}</td><td>{o[7] === "No exception" ? <span className="quiet">—</span> : <span className="exception">{o[7]}</span>}</td><td><button className="row-more">•••</button></td></tr>)}</tbody></table></div> }
 
-function Orders() { const [selected, setSelected] = useState(true); return <>{selected ? <OrderDetail close={() => setSelected(false)} /> : <><Header title="Orders" caption="One clear view of every order, its fulfilment progress and its next action." /><div className="toolbar"><div className="search">⌕&nbsp;&nbsp; Search order, reference, customer…</div><button className="filter">☷ Filters <span>2</span></button><button className="filter">Columns</button><button className="primary">+ Create order</button></div><div className="saved-views"><button className="active">All orders <b>1,248</b></button><button>Action required <b>18</b></button><button>Stalled <b>6</b></button><button>Push failed <b>3</b></button><button>On hold <b>11</b></button><button>SLA at risk <b>7</b></button></div><section className="panel table-panel"><div className="table-meta">1,248 orders <span>•</span> Last updated just now <button>Export ↓</button></div><div onClick={() => setSelected(true)}><OrderTable /></div></section></>}</> }
+function Orders() { const [selected, setSelected] = useState(false); return <>{selected ? <OrderDetail close={() => setSelected(false)} /> : <><Header title="Orders" caption="One clear view of every order, its fulfilment progress and its next action." /><div className="toolbar"><div className="search">⌕&nbsp;&nbsp; Search order, reference, customer…</div><button className="filter">☷ Filters <span>2</span></button><button className="filter">Columns</button><button className="primary">+ Create order</button></div><div className="saved-views"><button className="active">All orders <b>1,248</b></button><button>Action required <b>18</b></button><button>Stalled <b>6</b></button><button>Push failed <b>3</b></button><button>On hold <b>11</b></button><button>SLA at risk <b>7</b></button></div><section className="panel table-panel"><div className="table-meta">1,248 orders <span>•</span> Last updated just now <button>Export ↓</button></div><div onClick={() => setSelected(true)}><OrderTable /></div></section></>}</> }
 
 function OrderDetail({ close }: { close: () => void }) { return <><Header title="Order #BW-10477" caption="Aster & Ash · Shopify · Created today at 09:42 BST"/><div className="detail-top"><button className="back" onClick={close}>← All orders</button><div className="detail-actions"><button className="outline">Hold</button><button className="outline">Re-route</button><button className="outline">•••</button><button className="primary">Resolve exception</button></div></div><section className="status-rail"><div><small>ORDER STATE</small>{pill("Partially fulfilled")}</div><span>›</span><div><small>WMS STATE</small><b>Despatched</b></div><span>›</span><div><small>SHIPMENT STATE</small><b>Awaiting scan</b></div><span>›</span><div><small>SLA</small>{pill("At risk")}</div><div className="route-reason"><small>ROUTED TO</small><b>London Fulfilment</b><span>Stock + delivery rule matched</span></div></section><div className="alert"><b>!</b><div><strong>Quantity mismatch needs review</strong><p>1 of 2 line items has shipped short. Confirm the residual fulfilment plan before this order can progress.</p></div><button>View resolution options →</button></div><div className="detail-grid"><div><section className="panel"><div className="panel-head"><div><h2>Items & fulfilment</h2><p>Allocated inventory is reserved from available stock.</p></div></div><div className="line-item"><div className="product-image aqua">A</div><div className="line-main"><b>Balance Daily Serum</b><small>SKU · AA-SER-30</small></div><div><small>ORDERED</small><b>2</b></div><div><small>ALLOCATED</small><b>2</b></div><div><small>SHIPPED</small><b className="amber-text">1</b></div><button>⌄</button></div><div className="line-item"><div className="product-image sand">A</div><div className="line-main"><b>Renewal Night Cream</b><small>SKU · AA-NCR-50</small></div><div><small>ORDERED</small><b>1</b></div><div><small>ALLOCATED</small><b>1</b></div><div><small>SHIPPED</small><b>1</b></div><button>⌄</button></div></section><section className="panel activity"><div className="panel-head"><div><h2>Activity</h2><p>An immutable record of every change.</p></div><button className="text-button">Full audit →</button></div>{[["Order partially fulfilled", "System · 12:18", "Shipment quantity reconciliation found 1 item outstanding."], ["Order despatched", "London Fulfilment · 12:14", "1 parcel created · Tracking pending"], ["WMS acknowledged order", "Integration · 10:02", "Reference: LON-884201"], ["Stock allocated", "System · 09:43", "3 units reserved from London inventory"]].map(([a,b,c],i) => <div className="timeline" key={a}><i className={i === 0 ? "warn" : ""}/><div><b>{a}</b><small>{b}</small><p>{c}</p></div></div>)}</section></div><aside><section className="panel side-info"><h3>Customer & delivery</h3><div className="info-block"><b>Amelia Wren</b><span>amelia@asterandash.com</span><span>+44 7700 900 812</span></div><div className="info-block"><b>21 Cloudesley Road</b><span>London N1 0HS</span><span>United Kingdom</span></div><button className="text-button">View full order data →</button></section><section className="panel side-info"><h3>Shipment</h3><div className="info-row"><span>Courier</span><b>DPD UK</b></div><div className="info-row"><span>Service</span><b>Next Day</b></div><div className="info-row"><span>Tracking</span><b className="amber-text">Pending scan</b></div><div className="info-row"><span>Weight</span><b>0.8 kg</b></div></section><section className="panel side-info"><h3>Order details</h3><div className="info-row"><span>Order type</span><b>B2C</b></div><div className="info-row"><span>Value</span><b>£148.00</b></div><div className="info-row"><span>Required despatch</span><b>Today, 17:00</b></div></section></aside></div></> }
 
