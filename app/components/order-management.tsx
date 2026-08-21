@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { OrderDetailTabs } from "./order-detail-tabs";
 
 type Queue = "All Orders" | "Action Required" | "Stalled" | "Push Failed" | "On Hold" | "SLA At Risk" | "Cancellation Pending" | "Partial Fulfilment";
 type Order = { id: string; client: string; state: string; wms: string; shipment: string; sla: string; warehouse: string; issue?: string; tags: string[] };
@@ -55,7 +56,7 @@ const detailTabs = ["Order information", "Items & Fulfilment", "Shipment", "Acti
 type DetailTab = (typeof detailTabs)[number];
 
 export function OrderDetail({ orderId }: { orderId: string }) {
-  const [tab, setTab] = useState<DetailTab>("Order information");
+  const [tab, setTab] = useState("Overview");
   const [actionOpen, setActionOpen] = useState(false);
   const [actionNote, setActionNote] = useState("");
   const order = orders.find((item) => item.id === orderId) ?? orders[5];
@@ -66,8 +67,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
     <section className="status-dimensions"><StatusCard label="Order state" value="Partially Fulfilled" tone="amber" /><StatusCard label="WMS state" value="Despatched" /><StatusCard label="Shipment state" value="Awaiting First Scan" tone="amber" /><StatusCard label="Integration" value="Healthy" tone="green" /><StatusCard label="SLA" value="At Risk" detail="2h 14m remaining" tone="amber" /><StatusCard label="Exception" value="Quantity mismatch" tone="red" /></section>
     <section className="lifecycle-progress"><div className="panel-head"><div><h2>Order journey</h2><p>High-level lifecycle only. Operational state dimensions remain independent above.</p></div></div><div className="journey-steps">{[["Validating", "complete"], ["Ready", "complete"], ["In Fulfilment", "complete"], ["Partially Fulfilled", "current"], ["Fulfilled", "upcoming"], ["In Transit", "upcoming"], ["Delivered", "upcoming"], ["Invoiced", "upcoming"]].map(([name,state]) => <div className={`journey-step ${state}`} key={name}><i>{state === "complete" ? "✓" : state === "current" ? "●" : ""}</i><b>{name}</b></div>)}</div><div className="branch-status"><b>Contextual branches</b><span>On Hold</span><span>Backorder</span><span>Cancellation Pending</span><span>Cancelled</span><small>None active for this order</small></div></section>
     <section className="detail-alert"><b>!</b><div><strong>Quantity mismatch needs review</strong><p>Bundle has surfaced a structured work item with ownership, a reason and permitted resolution actions.</p></div><button title="Opens the contextual resolution drawer for this order." onClick={() => setActionOpen(true)}>Review resolution →</button></section>
-    <nav className="detail-tabs" aria-label="Order detail sections">{detailTabs.map((name) => <button className={tab === name ? "active" : ""} onClick={() => setTab(name)}>{name}</button>)}</nav>
-    <DetailPanel tab={tab} order={order} />
+    <OrderDetailTabs activeTab={tab} onTabChange={setTab} />
     {actionOpen && <div className="modal-backdrop" role="presentation" onClick={() => setActionOpen(false)}><section className="action-drawer" role="dialog" aria-modal="true" aria-label="Operational actions" onClick={(event) => event.stopPropagation()}><button className="drawer-close" onClick={() => setActionOpen(false)}>×</button><span className="eyebrow">STATE-AWARE ACTIONS</span><h2>Allowed operational actions</h2><p>Available actions are controlled by the order&apos;s state, WMS lock points and your role.</p>{[["Resolve quantity mismatch", "Reconcile short shipment and create a residual fulfilment part."], ["Place on hold", "Pause workflow with a reason; notify the warehouse if it supports holds."], ["Raise an order query", "Create a structured query with owner, due time and supporting notes."], ["Open integration trace", "Inspect the human-readable Shopify → Bundle → WMS event trail."]].map(([title,copy]) => <button className="drawer-action" title={copy} key={title}><b>{title}</b><span>{copy}</span><i>→</i></button>)}</section></div>}
   </AppShell>;
 }
