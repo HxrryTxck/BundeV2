@@ -22,12 +22,12 @@ const orders: Order[] = [
 const classFor = (value: string) => value.toLowerCase().replaceAll(" ", "-");
 const pill = (value: string) => <span className={`pill ${classFor(value)}`}>{value}</span>;
 
-function AppShell({ children, detail = false }: { children: React.ReactNode; detail?: boolean }) {
+export function AppShell({ children, detail = false }: { children: React.ReactNode; detail?: boolean }) {
   const [clientOpen, setClientOpen] = useState(false);
   return <main className="oms-shell"><header className="bundle-topnav"><Link href="/orders" className="bundle-logo"><span>b</span><b>bundle</b><small>by wayfindr</small></Link><nav aria-label="Main navigation"><button title="Dashboard is outside the scope of this Order Management prototype.">Dashboard</button><Link className="nav-active" href="/orders">Orders</Link><button title="Returns is outside the scope of this Order Management prototype.">Returns</button><button title="Inventory is outside the scope of this Order Management prototype.">Inventory</button><button title="ASN is outside the scope of this Order Management prototype.">ASN</button><button title="Shipments is outside the scope of this Order Management prototype.">Shipments</button><button title="Settings is outside the scope of this Order Management prototype.">Settings</button></nav><div className="topnav-right"><div className="client-select"><button title="Switches client scope for internal Wayfindr users." onClick={() => setClientOpen((current) => !current)}>All Clients <span>⌄</span></button>{clientOpen && <div className="client-menu"><button onClick={() => setClientOpen(false)}>All Clients</button><button onClick={() => setClientOpen(false)}>Aster & Ash</button><button onClick={() => setClientOpen(false)}>Canyon Club</button></div>}</div><button title="Shows notifications." className="top-notification">●<i>3</i></button><div className="avatar top-avatar">EM</div></div></header><section className="oms-content">{children}</section></main>;
 }
 
-function Header({ title, copy, back }: { title: string; copy: string; back?: boolean }) {
+export function Header({ title, copy, back }: { title: string; copy: string; back?: boolean }) {
   return <header className="oms-head"> <div>{back && <Link href="/orders" className="back-link">← All orders</Link>}<h1>{title}</h1><p>{copy}</p></div><div className="head-actions"><button title="Searches the current order workbench." className="icon-button">⌕</button></div></header>;
 }
 

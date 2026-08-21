@@ -1,5 +1,5 @@
-import { OrderWorkbench } from "../components/order-management";
+import { OrdersWorkbench } from "../components/orders-workbench";
 
 export default function OrdersPage() {
-  return <OrderWorkbench />;
+  return <OrdersWorkbench />;
 }
